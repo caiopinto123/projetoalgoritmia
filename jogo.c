@@ -3,10 +3,6 @@
 #include <time.h>
 #include <ctype.h>
 
-#ifdef RUN_TESTS
-extern int call_tests(void);
-#endif
-
 // Lê um inteiro com verificação de entrada
 int leInteiro(const char *mensagem) {
     int valor;
@@ -68,10 +64,10 @@ void imprimirTabuleiro(char **tabuleiro, int linhas, int colunas) {
 }
 
 // Modifica uma casa do tabuleiro
-void modificarCasa(char **tabuleiro, int linha, int coluna, int acao) {
-    if (acao == 1 && islower(tabuleiro[linha][coluna])) {
+void modificarCasa(char **tabuleiro, int linha, int coluna, char acao) {
+    if (acao == 'm' && islower(tabuleiro[linha][coluna])) {
         tabuleiro[linha][coluna] = toupper(tabuleiro[linha][coluna]);
-    } else if (acao == 2) {
+    } else if (acao == 'c') {
         tabuleiro[linha][coluna] = '#';
     }
 }
@@ -84,11 +80,7 @@ void liberarTabuleiro(char **tabuleiro, int linhas) {
 }
 
 // Função principal
-int main(void) {
-
-    #ifdef RUN_TESTS
-        if(call_tests() == 0) printf("\nTest was sucessful\n");
-    #else
+int main() {
     int linhas = leInteiro("Digite o número de linhas: ");
     int colunas = leInteiro("Digite o número de colunas: ");
 
@@ -100,33 +92,49 @@ int main(void) {
     }
 
     preencherTabuleiro(tabuleiro, linhas, colunas);
-
+    
+    int lin, col;
+    char cond;
     int opcao;
+
+do {
+
+printf("\nMenu\n");
+printf("1 - Jogar\n");
+printf("0 - Sair\n");
+printf("Escolha uma opção: ");
+scanf("%d", &opcao);
+
+
+while (getchar() != '\n');
+
+if (opcao == 1) {
+    int continuar = 1;
+    
     do {
         imprimirTabuleiro(tabuleiro, linhas, colunas);
-        printf("\nMenu:\n");
-        printf("1 - Transformar letra em maiúscula\n");
-        printf("2 - Riscar uma casa (#)\n");
-        printf("0 - Sair\n");
-        opcao = leInteiro("Escolha uma opção: ");
+        printf("Informe a condição, linha e a coluna (ou 0 para sair): ");
 
-        if (opcao == 1 || opcao == 2) {
-            int lin = leInteiro("Informe a linha: ");
-            int col = leInteiro("Informe a coluna: ");
-            if (lin >= 0 && lin < linhas && col >= 0 && col < colunas) {
-                modificarCasa(tabuleiro, lin, col, opcao);
+        char entrada[20];
+        fgets(entrada, sizeof(entrada), stdin);
+
+        if (entrada[0] == '0' && entrada[1] == '\n') {
+            continuar = 0;
             } else {
-                printf("Posição inválida!\n");
+                if (sscanf(entrada, "%c %d %d", &cond, &lin, &col) != 3) {
+                    printf("Entrada inválida! Tente de novo.\n");
+                } else if (lin >= 0 && lin < linhas && col >= 0 && col < colunas) {
+                    modificarCasa(tabuleiro, lin, col, cond);
+                } else {
+                    printf("Posição inválida!\n");
+                }
             }
-        }
+        } while (continuar);
+    }
+} while (opcao != 0); 
 
-    } while (opcao != 0);
 
-    printf("\nEstado final do tabuleiro:\n");
-    imprimirTabuleiro(tabuleiro, linhas, colunas);
-
-    liberarTabuleiro(tabuleiro, linhas);
-    printf("\n");
-    #endif
-    return 0;
-}
+printf("\nEstado final do tabuleiro:\n");
+imprimirTabuleiro(tabuleiro, linhas, colunas);
+liberarTabuleiro(tabuleiro, linhas);
+return 0;}
