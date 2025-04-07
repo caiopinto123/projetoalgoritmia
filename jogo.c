@@ -19,7 +19,7 @@ int leInteiro(const char *mensagem) {
         } else {
             printf("Entrada inválida. Tente novamente.\n");
             while ((c = getchar()) != '\n' && c != EOF); // limpa buffer
-        }
+        } dol
     }
 }
 
