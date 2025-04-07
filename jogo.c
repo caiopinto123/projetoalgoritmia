@@ -9,7 +9,7 @@ extern int call_tests(void);
 
 // Lê um inteiro com verificação de entrada
 int leInteiro(const char *mensagem) {
-    int valor;
+    int valor; dol
     char c;
     while (1) {
         printf("%s", mensagem);
