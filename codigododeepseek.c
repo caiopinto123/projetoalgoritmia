@@ -331,6 +331,7 @@ int main(void) {
     char **tabuleiro_original = NULL;
     char mensagem[100] = "";
     int opcao = -1;
+    int jogadas = 0;
     char sair2 = 's';
 
     historicoTabuleiros = malloc(MAX_HISTORICO * sizeof(char**));
@@ -469,7 +470,6 @@ int main(void) {
     
         int sair = 0;
         int primeiraVez = 1;
-        int jogadas = 0;
         char linhaInput[100];
     
         if (opcao == 1253654214) {
