@@ -355,7 +355,8 @@ while(sair2 == 's') {
         printf("A - invocar o comando a enquanto o jogo sofrer alterações\n");
         printf("R - resolver o jogo\n");
         printf("d - desfazer o último comando executado\n");
-        printf("s - sair do programa\n");
+        printf("s - sair para o menu\n");
+        printf("0 - terminar o programa\n");
         sair2 = leLetra("voltar ao inicio: ");
         if (sair2 == 's') opcao = -1;
         continue;
