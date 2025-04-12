@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <stdbool.h>
+
 
 void salvarTabuleiroComNome(char **tabuleiro, int linhas, int colunas);
 
@@ -181,13 +183,13 @@ void salvarTabuleiroComNome(char **tabuleiro, int linhas, int colunas) {
     }
 }
 
-void verificaRegras(char **tabuleiro, int l, int c) {
+void verificaRegras(char **tabuleiro, int l, int c, char *mensagem) {
     int i, j, k;
     for (i = 0; i < l; i++) {
         for (j = 0; j < c; j++) {
             for (k = j + 1; k < c; k++) {
                 if (tabuleiro[i][j] == '#' && tabuleiro[i][k] == '#') {
-                    printf("Repetição '#' na linha %d nas colunas %d e %d\n", i, j, k);
+                    sprintf(mensagem, "Repetição '#' na linha %d nas colunas %d e %d", i, j, k);
                     return;
                 }
             }
@@ -196,7 +198,7 @@ void verificaRegras(char **tabuleiro, int l, int c) {
     for (j = 0; j < c; j++) {
         for (i = 0; i < l - 1; i++) {
             if (tabuleiro[i][j] == '#' && tabuleiro[i + 1][j] == '#') {
-                 printf("Repetição '#' na coluna %d nas linhas %d e %d\n", j, i, i + 1);
+                 sprintf(mensagem, "Repetição '#' na coluna %d nas linhas %d e %d", j, i, i + 1);
                  return;
             }
         }
@@ -205,13 +207,99 @@ void verificaRegras(char **tabuleiro, int l, int c) {
         for (j = 0; j < c; j++) {
             for (k = j + 1; k < c; k++) {
                 if (tabuleiro[i][j] != '#' && tabuleiro[i][k] != '#' && toupper(tabuleiro[i][j]) == toupper(tabuleiro[i][k])) {
-                    printf("Repetição '%c' na linha '%d'\n", tabuleiro[i][j], i );
+                    sprintf(mensagem, "Repetição '%c' na linha '%d'", tabuleiro[i][j], i );
                     return;
                 }
             }
         }
     }
+    strcpy(mensagem, "nada a verificar");
 }
+
+
+
+
+
+
+
+
+
+typedef struct {
+    int linha;
+    int coluna;
+} Posicao;
+
+bool casasBrancasEstaoConectadas(char **tabuleiro, int linhas, int colunas) {
+    if (linhas == 0 || colunas == 0) return true;
+    
+    Posicao inicio = {-1, -1};
+    int contadorBrancas = 0;
+    
+    for (int i = 0; i < linhas; i++) {
+        for (int j = 0; j < colunas; j++) {
+            if (isupper(tabuleiro[i][j])) {
+                contadorBrancas++;
+                if (inicio.linha == -1) {
+                    inicio.linha = i;
+                    inicio.coluna = j;
+                }
+            }
+        }
+    }
+    
+    if (contadorBrancas == 0) return true;
+    
+    bool **visitado = malloc(linhas * sizeof(bool *));
+    for (int i = 0; i < linhas; i++) {
+        visitado[i] = calloc(colunas, sizeof(bool));
+    }
+    
+    Posicao *fila = malloc(linhas * colunas * sizeof(Posicao));
+    int frente = 0;
+    int tras = 0;
+    
+    fila[tras++] = inicio;
+    visitado[inicio.linha][inicio.coluna] = true;
+    int contadorConectadas = 1;
+    
+    int direcoes[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    
+    while (frente < tras) {
+        Posicao atual = fila[frente++];
+        
+        for (int i = 0; i < 4; i++) {
+            int novaLinha = atual.linha + direcoes[i][0];
+            int novaColuna = atual.coluna + direcoes[i][1];
+            
+            if (novaLinha >= 0 && novaLinha < linhas && novaColuna >= 0 && novaColuna < colunas) {
+                if (!visitado[novaLinha][novaColuna] && isupper(tabuleiro[novaLinha][novaColuna])) {
+                    visitado[novaLinha][novaColuna] = true;
+                    fila[tras++] = (Posicao){novaLinha, novaColuna};
+                    contadorConectadas++;
+                }
+            }
+        }
+    }
+    
+    for (int i = 0; i < linhas; i++) {
+        free(visitado[i]);
+    }
+    free(visitado);
+    free(fila);
+    
+    return contadorConectadas == contadorBrancas;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 char leLetra(const char *mensagem) {
@@ -237,6 +325,7 @@ int main(void) {
     char **tabuleiro = NULL;
     char **tabuleiro_original = NULL; //
     char **tabuleiroAnterior = NULL;
+    char mensagem[100] = "";
     int opcao = -1;
 
     char sair2 = 's';
@@ -392,12 +481,17 @@ while(sair2 == 's') {
 
     while (!sair) {
         imprimirTabuleiro(tabuleiro, linhas, colunas);
+        
+         if (strlen(mensagem) > 0) {
+        printf("\n%s\n\n", mensagem);
+        mensagem[0] = '\0'; // Limpa a mensagem após exibir
+    }
+    
         printf("Jogadas realizadas: %d\n", jogadas);
         if (primeiraVez) {
             printf("Clique 'c' para acessar os controlos.\n");
         }
 
-        
 
         if (fgets(linhaInput, sizeof(linhaInput), stdin) != NULL) {
             linhaInput[strcspn(linhaInput, "\n")] = 0;
@@ -406,16 +500,21 @@ while(sair2 == 's') {
                 sair = 1;
             } else if (strcmp(linhaInput, "d") == 0 || strcmp(linhaInput, "D") == 0) {
                 copiarTabuleiro(tabuleiro, tabuleiroAnterior, linhas, colunas);
-                jogadas --;
-                printf("\nÚltima jogada anulada.\n");
-                
+                if (jogadas > 0) jogadas --;
+                strcpy(mensagem, "Última jogada anulada.");
             } else if (strcmp(linhaInput, "v") == 0 || strcmp(linhaInput, "V") == 0) {
-                verificaRegras(tabuleiro, linhas, colunas);
+                verificaRegras(tabuleiro, linhas, colunas, mensagem);
             } else if (strcmp(linhaInput, "s") == 0 || strcmp(linhaInput, "S") == 0) {
                             sair2 = 's'; sair = 1;
                             if (sair2 == 's') opcao = -1;
             } else if (strcmp(linhaInput, "g") == 0 || strcmp(linhaInput, "G") == 0) {
                 salvarTabuleiroComNome(tabuleiro, linhas, colunas);
+            } else if (strcmp(linhaInput, "p") == 0) {
+                bool conectado = casasBrancasEstaoConectadas(tabuleiro, linhas, colunas);
+                if (strcmp(linhaInput, "p") == 0) {
+                    bool conectado = casasBrancasEstaoConectadas(tabuleiro, linhas, colunas);
+                    sprintf(mensagem, "As casas brancas %s estao conectadas.", conectado ? "" : "NAO ");
+                }
             } else if (strcmp(linhaInput, "c") == 0) {
                         opcao = 1253654214; sair = 1; sair2 = 's';
             } else {
@@ -434,17 +533,17 @@ while(sair2 == 's') {
                             modificarCasa(tabuleiro,tabuleiro_original, lin, col, 2, linhas, colunas);
                             primeiraVez = 0;
                         } else {
-                            printf("Ação inválida!\n");
+                            strcpy(mensagem, "Ação inválida!\n");
                         }
                     } else {
-                        printf("Posição inválida!\n");
+                        strcpy(mensagem, "Posição inválida!\n");
                     }
                 } else {
-                    printf("Formato inválido! Use: r linha coluna ou b linha coluna\n");
+                    strcpy(mensagem, "Formato inválido! Use: r linha coluna ou b linha coluna\n");
                 }
             }
         } else {
-            printf("Erro na leitura!\n");
+            strcpy(mensagem, "Erro na leitura!\n");
             sair = 1;
         }
     }
